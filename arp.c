@@ -13,15 +13,9 @@
 #include <arpa/inet.h>
 #include "networkinfo.h"
 #include "arp.h"
-void makearprep(char *dev, char *packet, char *t_ip, char *t_mac){
-    char g_ip[IPSIZE];
+void makearprep(char *dev, char *packet, char *s_ip, char *s_mac, char *t_ip, char *t_mac){
     char *cp;
-    u_char s_mac[MACASIZE];
     struct ether_header etheh;
-
-    getGIPAddress(dev, g_ip);
-    getMMACAddress(dev, s_mac);
-
     cp = packet;
 
     memcpy(etheh.ether_dhost, t_mac, MACASIZE);
@@ -32,7 +26,7 @@ void makearprep(char *dev, char *packet, char *t_ip, char *t_mac){
 
     struct ether_arp arph;
     memcpy(arph.arp_sha, s_mac, MACASIZE);
-    inet_aton(g_ip, &(arph.arp_spa));
+    inet_aton(s_ip, &(arph.arp_spa));
     memcpy(arph.arp_tha, t_mac, MACASIZE);
     inet_aton(t_ip, &(arph.arp_tpa));
     arph.ea_hdr.ar_hln = MACASIZE;
@@ -72,4 +66,11 @@ void makearpreq(char *dev, char *packet, char *t_ip){
     arph.ea_hdr.ar_op = htons(ARP_OPER_REQ);
     memcpy(cp, &arph, sizeof(struct ether_arp)); //arp 패킷 세팅
 }
-
+int sendarpreq(pcap_t *pcd, char *dev, char *packet, char *t_ip){
+    makearpreq(dev, packet, t_ip);
+    return pcap_inject(pcd,packet,sizeof(struct ether_header)+sizeof(struct ether_arp));
+}
+int sendarprep(pcap_t *pcd, char *dev, char *packet, char *s_ip, char *s_mac, char *t_ip, char *t_mac){
+    makearprep(dev, packet, s_ip, s_mac, t_ip, t_mac);
+    return pcap_inject(pcd,packet,sizeof(struct ether_header)+sizeof(struct ether_arp));
+}

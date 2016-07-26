@@ -15,6 +15,12 @@ int getMIPAddress(char *dev, char *buf){
         return 0;
     }
     fgets(buf, IPSIZE, fp);
+    for(int i=0; i<=IPSIZE; i++){
+        if(buf[i] == '\n'){
+            buf[i] = NULL;
+            break;
+        }
+    }
     return 1;
 }
 
@@ -29,6 +35,12 @@ int getGIPAddress(char *dev, char *buf){
         return 0;
     }
     fgets(buf, IPSIZE, fp);
+    for(int i=0; i<=IPSIZE; i++){
+        if(buf[i] == '\n'){
+            buf[i] = NULL;
+            break;
+        }
+    }
     return 1;
 }
 

@@ -7,29 +7,18 @@
 #include <errno.h>
 #include <unistd.h>
 #include <netinet/if_ether.h>
-#include <sys/ioctl.h>
 #include <net/if.h>
-#include <linux/rtnetlink.h>
-#include <arpa/inet.h>
 #include "networkinfo.h"
 #include "arp.h"
 
 int gett_mac(const u_char *packet, u_char *t_mac, char* t_ip);
 
-int main(int argc, char **argv){
+int main(void){
     char *dev;
     char errbuf[PCAP_ERRBUF_SIZE];
-    int ret;
     struct pcap_pkthdr hdr;
-    struct in_addr net_addr, mask_addr;
-    struct ether_header *eptr;
     const u_char *packet;
-    u_char *cp;
-    u_char sp_buf[1024];
-    u_char t_ip[16], s_ip[16], g_ip[16], t_mac[6] = {0xff,0xff,0xff,0xff,0xff,0xff}, s_mac[6];
-
-    struct bpf_program fp;
-
+    u_char sp_buf[MTUSIZE], s_ip[IPSIZE], t_ip[IPSIZE], s_mac[MACASIZE], t_mac[MACASIZE], g_ip[IPSIZE], g_mac[MACASIZE];
     pcap_t *pcd;  // packet capture descriptor
 
     dev = pcap_lookupdev(errbuf); // 디바이스 이름
@@ -46,26 +35,41 @@ int main(int argc, char **argv){
 
     printf("Target IP Address: ");
     scanf("%s", t_ip);
-    makearpreq(dev, sp_buf, t_ip);
 
-    if((pcap_inject(pcd,sp_buf,sizeof(struct ether_header)+sizeof(struct ether_arp))) ==-1) {
+    if((sendarpreq(pcd, dev, sp_buf, t_ip)) == -1){
         pcap_perror(pcd,0);
         pcap_close(pcd);
         exit(1);
-    };
-
-    // 패킷이 캡쳐되면 callback함수를 실행한다.
+    }
     while(1){
         packet = pcap_next(pcd, &hdr);
         if(gett_mac(packet, t_mac, t_ip) == 1)
             break;
     }
 
-    makearprep(dev, sp_buf, t_ip, t_mac);
+    getGIPAddress(dev, g_ip);
+    makearpreq(dev, sp_buf, g_ip);
+    if((sendarpreq(pcd, dev, sp_buf, g_ip)) ==-1) {
+        pcap_perror(pcd,0);
+        pcap_close(pcd);
+        exit(1);
+    };
+    while(1){
+        packet = pcap_next(pcd, &hdr);
+        if(gett_mac(packet, g_mac, g_ip) == 1)
+            break;
+    }
+    getMIPAddress(dev, s_ip);
+    getMMACAddress(dev, s_mac);
 
     while(1){
         printf("send arp reply packet\n");
-        if((pcap_inject(pcd,sp_buf,sizeof(struct ether_header)+sizeof(struct ether_arp))) ==-1) {
+        if((sendarprep(pcd ,dev, sp_buf, g_ip, s_mac, t_ip, t_mac)) ==-1) {
+            pcap_perror(pcd,0);
+            pcap_close(pcd);
+            exit(1);
+        };
+        if((sendarprep(pcd, dev, sp_buf, t_ip, s_mac, g_ip, g_mac)) ==-1) {
             pcap_perror(pcd,0);
             pcap_close(pcd);
             exit(1);
@@ -88,11 +92,11 @@ int gett_mac(const u_char *packet, u_char * t_mac, char* t_ip){
         struct ether_arp *arph; // arp 헤더 구조체
         arph = (struct ether_arp *)packet;
         packet += sizeof(struct ether_arp);
-        if(arph->ea_hdr.ar_op = 2){
+        if(arph->ea_hdr.ar_op = ARP_OPER_REP){
             char tip[16];
             inet_ntop(AF_INET, &arph->arp_spa, tip, sizeof(tip));
             if(!strcmp(tip, t_ip)){
-                memcpy(t_mac, arph->arp_sha, 12);
+                memcpy(t_mac, arph->arp_sha, MACASIZE);
                 return 1;
             }
         }
