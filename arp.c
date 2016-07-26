@@ -1,19 +1,14 @@
-#include <sys/time.h>
 #include <netinet/in.h>
 #include <pcap/pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <unistd.h>
 #include <netinet/if_ether.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <linux/rtnetlink.h>
 #include <arpa/inet.h>
 #include "networkinfo.h"
 #include "arp.h"
-void makearprep(char *dev, char *packet, char *s_ip, char *s_mac, char *t_ip, char *t_mac){
+void makearprep(char *dev, u_char *packet, u_char *s_ip, u_char *s_mac, u_char *t_ip, u_char *t_mac){
     char *cp;
     struct ether_header etheh;
     cp = packet;
@@ -37,7 +32,7 @@ void makearprep(char *dev, char *packet, char *s_ip, char *s_mac, char *t_ip, ch
     memcpy(cp, &arph, sizeof(struct ether_arp)); //arp 패킷 세팅
 }
 
-void makearpreq(char *dev, char *packet, char *t_ip){
+void makearpreq(char *dev, u_char *packet, u_char *t_ip){
     char s_ip[IPSIZE];
     char *cp;
     u_char s_mac[MACASIZE], t_mac[MACASIZE] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -66,11 +61,11 @@ void makearpreq(char *dev, char *packet, char *t_ip){
     arph.ea_hdr.ar_op = htons(ARP_OPER_REQ);
     memcpy(cp, &arph, sizeof(struct ether_arp)); //arp 패킷 세팅
 }
-int sendarpreq(pcap_t *pcd, char *dev, char *packet, char *t_ip){
+int sendarpreq(pcap_t *pcd, char *dev, u_char *packet, u_char *t_ip){
     makearpreq(dev, packet, t_ip);
     return pcap_inject(pcd,packet,sizeof(struct ether_header)+sizeof(struct ether_arp));
 }
-int sendarprep(pcap_t *pcd, char *dev, char *packet, char *s_ip, char *s_mac, char *t_ip, char *t_mac){
+int sendarprep(pcap_t *pcd, char *dev, u_char *packet, u_char *s_ip, u_char *s_mac, u_char *t_ip, u_char *t_mac){
     makearprep(dev, packet, s_ip, s_mac, t_ip, t_mac);
     return pcap_inject(pcd,packet,sizeof(struct ether_header)+sizeof(struct ether_arp));
 }
