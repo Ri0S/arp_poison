@@ -118,8 +118,9 @@ int packetrelay(pcap_t *pcd, u_char *packet, u_char *g_ip, u_char *t_ip, u_char 
             memcpy(etheh->ether_shost, s_mac, MACASIZE);
             pcap_inject(pcd, packet, sizeof(struct ether_header) + ntohs(iph->ip_len));
         }
-        else if(!strcmp(tip, t_ip)){
-            memset(etheh->ether_shost, s_mac, MACASIZE);
+        else if(!strcmp(tip, t_ip) && !memcmp(etheh->ether_shost, g_mac, MACASIZE)){
+            memcpy(etheh->ether_shost, s_mac, MACASIZE);
+            memcpy(etheh->ether_dhost, t_mac, MACASIZE);
             pcap_inject(pcd, packet, sizeof(struct ether_header) + ntohs(iph->ip_len));
         }
     }
