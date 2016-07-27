@@ -72,7 +72,7 @@ int getGMACAddress(u_char *g_ip, u_char *buf){
     char temp[MACSIZE];
     FILE *fp;
 
-    sprintf(cmd, "arp -n | grep %s | awk '{ print $3 }'", g_ip);
+    sprintf(cmd, "arp -n | grep -w %s | awk '{ print $3 }'", g_ip);
     fp = popen(cmd, "r");
     if(fp == NULL){
         fprintf(stderr, "getMIPAddress Error\n");
