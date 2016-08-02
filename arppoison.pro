@@ -6,11 +6,13 @@ CONFIG -= qt
 LIBS += -lpcap
 SOURCES += main.c \
     networkinfo.c \
-    arp.c
+    arp.c \
+    packetcntl.c
     arp.c
 
 HEADERS += \
     networkinfo.h \
-    arp.h
+    arp.h \
+    packetcntl.h
     arp.h
 
